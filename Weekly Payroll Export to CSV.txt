@@ -1,0 +1,35 @@
+<?php 
+// Includes
+include("includes/dbinfo.php");
+include 'mathfunctions.php';
+include("includes/global.php");
+$Payroll_File_Date = date('m-d-Y');
+
+$sql = sqlsrv_query($conn, "SELECT id, Dept, [Employee ID], [Last Name], [First Name], [Hours], [Overtime], [Vacation], [Personal], [Holiday], [Bonus], [Commission], [Mileage] 
+
+FROM TC_Payroll_ESC 
+
+ORDER BY CASE WHEN id='1' THEN 1 ELSE 2 END, Dept, [Last Name]");
+$num = 0;
+while ($p = sqlsrv_fetch_array($sql, SQLSRV_FETCH_ASSOC)) {
+	$prod[$num]['Employee ID'] = $p['Employee ID'];
+	$prod[$num]['Last Name'] = $p['Last Name'];
+	$prod[$num]['First Name'] = $p['First Name'];
+	$prod[$num]['Hours'] = $p['Hours'];
+	$prod[$num]['Overtime'] = $p['Overtime'];
+	$prod[$num]['Vacation'] = $p['Vacation'];
+	$prod[$num]['Personal'] = $p['Personal'];
+	$prod[$num]['Holiday'] = $p['Holiday'];
+	$prod[$num]['Bonus'] = $p['Bonus'];
+	$prod[$num]['Commission'] = $p['Commission'];
+	$prod[$num]['Mileage'] = $p['Mileage'];
+    $num++;        
+}
+$output = fopen("php://output",'w') or die("Can't open php://output");
+header("Content-Type:application/csv"); 
+header("Content-Disposition:attachment;filename=payroll" . $Payroll_File_Date . ".csv"); 
+
+foreach($prod as $product) {
+    fputcsv($output, $product);
+}
+fclose($output) or die("Can't close php://output"); ?>
