@@ -1,0 +1,43 @@
+SELECT DD_Employees.[Employee Number], DD_Employees.[Employee Name], DD_Employees.Type,
+
+IIf(MAX([Start Time]) is not null,
+	IIf(MAX([Stop Time]) is not null AND MAX([Stop Time]) > MAX([Start Time]),
+		MAX([Stop Time]),
+		MAX([Start Time])
+	),
+	null
+) AS [Last Activity Time],
+
+IIf(MAX([Start Time]) is not null,
+	IIf(MAX([Stop Time]) is not null AND MAX([Stop Time]) > MAX([Start Time]),
+		'Punched Out',
+		'Punched In'
+	),
+	null
+) AS [PunchInOut],
+
+IIF(SUM(TC_Weekly_Qry_Sub.[Total Regular Hours Minus Lunch])>0,SUM(TC_Weekly_Qry_Sub.[Total Regular Hours Minus Lunch]),0) AS [SumTotal Regular Hours]
+
+FROM DD_Employees LEFT JOIN ( 
+
+	SELECT TC_Punch.[Completed By], 
+	
+	DD_Employees.[id] AS [EmployeeID], 
+
+	TC_Punch.[Start Time], TC_Punch.[Stop Time], 
+
+	DateDiff(second,[Start Time],IIf([Stop Time]>' ',[Stop Time],getdate()))/3600.0 AS [Total Regular Hours], 
+
+	IIf(DateDiff(second,[Start Time],IIf([Stop Time]>' ',[Stop Time],getdate()))/3600.0>6 AND [Override Lunch]=0,(DateDiff(second,[Start Time],IIf([Stop Time]>' ',[Stop Time],getdate()))/3600.0)-.5,DateDiff(second,[Start Time],IIf([Stop Time]>' ',[Stop Time],getdate()))/3600.0) AS [Total Regular Hours Minus Lunch],
+
+	DD_Employees.Type
+
+	FROM TC_Punch LEFT JOIN DD_Employees ON TC_Punch.[Completed By] = DD_Employees.[Employee Name]
+
+	WHERE (((DatePart(ww,[Start Time]))=DatePart(ww,getdate()) And Year([Start Time])=Year(getdate())) AND ((DD_Employees.Type)=0) AND ((TC_Punch.Type)='Regular'))
+
+) TC_Weekly_Qry_Sub ON DD_Employees.[id]=TC_Weekly_Qry_Sub.[EmployeeID]
+
+GROUP BY DD_Employees.[Employee Number], DD_Employees.[Employee Name], DD_Employees.Type
+
+HAVING DD_Employees.[Employee Number]>0 AND DD_Employees.Type=0
